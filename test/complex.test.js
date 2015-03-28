@@ -85,137 +85,135 @@ describe('Complex test', function() {
     });
 
     it('#local events', function(done) {
-        var c = 0;
-        var f = function(data) {
-            assert.equal(data.count, 3);
-            c++;
-            if (c > 1) {
-                assert.ok(false);
-            }
-        };
-        server_amoeba.use("auth").on("login", f, function() {
-            server_amoeba.use("auth").invoke("login", {
-                "login": "admin",
-                "password": "admin"
+    var c = 0;
+    var f = function(data) {
+        assert.equal(data.count, 3);
+        c++;
+        if (c > 1) {
+            assert.ok(false);
+        }
+    };
+    server_amoeba.use("auth").on("login", f, function() {
+        server_amoeba.use("auth").invoke("login", {
+            "login": "admin",
+            "password": "admin"
+        }, function(err, data) {
+            assert.equal(err, null);
+            assert.equal(data.res, "login ok");
+
+            server_amoeba.use("auth").removeListener("login", f, function() {
+                server_amoeba.use("auth").invoke("login", {
+                    "login": "admin",
+                    "password": "admin"
+                }, function() {
+                    done();
+                });
+            });
+
+        });
+    });
+});
+
+it('#socket events', function(done) {
+    var client_amoeba = new Amoeba();
+
+    var c = 0;
+    var f = function(data) {
+        assert.equal(data.count, 5);
+
+        c++;
+        if (c > 1) {
+            assert.ok(false);
+        }
+    };
+
+    var socket = new SocketClient('http://localhost:' + port, {
+        forceNew: true,
+        reconnection: false
+    });
+
+    socket.on('connect', function() {
+        client_amoeba.use("auth", new AmoebaSocketClient(socket));
+        client_amoeba.use("auth2", new AmoebaSocketClient(socket));
+
+        client_amoeba.use("auth").on("some", function(data) {
+            assert.ok(false);
+        });
+
+        client_amoeba.use("auth2").on("login", function(data) {
+            assert.ok(false);
+        });
+
+        client_amoeba.use("auth").on("login", f, function(err, data) {
+            client_amoeba.use("auth").invoke("login", {
+                login: 'admin',
+                password: 'admin'
             }, function(err, data) {
                 assert.equal(err, null);
                 assert.equal(data.res, "login ok");
 
-                server_amoeba.use("auth").removeListener("login", f, function() {
-                    server_amoeba.use("auth").invoke("login", {
+                client_amoeba.use("auth").removeListener("login", f, function() {
+                    client_amoeba.use("auth").invoke("login", {
                         "login": "admin",
                         "password": "admin"
                     }, function() {
                         done();
                     });
                 });
-
             });
         });
     });
 
-    it('#socket events', function(done) {
-        var client_amoeba = new Amoeba();
+});
 
-        var c = 0;
-        var f = function(data) {
-            assert.equal(data.count, 5);
+it('#chain socket events', function(done) {
+    var client_amoeba = new Amoeba();
 
-            c++;
-            if (c > 1) {
-                assert.ok(false);
-            }
-        };
+    var c = 0;
+    var f = function(data) {
+        assert.equal(data.count, 1);
 
-        var socket = new SocketClient('http://localhost:' + port, {
-            forceNew: true,
-            reconnection: false
-        });
+        c++;
+        if (c > 1) {
+            assert.ok(false);
+        }
+    };
 
-        socket.on('connect', function() {
-            client_amoeba.use("auth", new AmoebaSocketClient(socket));
-            client_amoeba.use("auth2", new AmoebaSocketClient(socket));
-
-            client_amoeba.use("auth").on("some", function(data) {
-                assert.ok(false);
-            });
-
-            client_amoeba.use("auth2").on("login", function(data) {
-                assert.ok(false);
-            });
-
-            client_amoeba.use("auth").on("login", f, function(err, data) {
-                client_amoeba.use("auth").invoke("login", {
-                    login: 'admin',
-                    password: 'admin'
-                }, function(err, data) {
-                    assert.equal(err, null);
-                    assert.equal(data.res, "login ok");
-
-                    client_amoeba.use("auth").removeListener("login", f, function() {
-                        client_amoeba.use("auth").invoke("login", {
-                            "login": "admin",
-                            "password": "admin"
-                        }, function() {
-                            done();
-                        });
-                    });
-
-
-                });
-
-            });
-        });
-
+    var socket = new SocketClient('http://localhost:' + port, {
+        forceNew: true,
+        reconnection: false
     });
 
-    it('#chain socket events', function(done) {
-        var client_amoeba = new Amoeba();
+    socket.on('connect', function() {
+        client_amoeba.use("deep", new AmoebaSocketClient(socket));
 
-        var c = 0;
-        var f = function(data) {
-            assert.equal(data.count, 1);
-
-            c++;
-            if (c > 1) {
-                assert.ok(false);
-            }
-        };
-
-        var socket = new SocketClient('http://localhost:' + port, {
-            forceNew: true,
-            reconnection: false
+        client_amoeba.use("deep").on("some", function(data) {
+            assert.ok(false);
         });
 
-        socket.on('connect', function() {
-            client_amoeba.use("deep", new AmoebaSocketClient(socket));
+        client_amoeba.use("deep").on("login", f, function(err, data) {
+            client_amoeba.use("deep").invoke("login", {
+                login: 'admin',
+                password: 'admin'
+            }, function(err, data) {
+                assert.equal(err, null);
+                assert.equal(data.res, "login ok");
 
-            client_amoeba.use("deep").on("some", function(data) {
-                assert.ok(false);
-            });
-
-            client_amoeba.use("deep").on("login", f, function(err, data) {
-                client_amoeba.use("deep").invoke("login", {
-                    login: 'admin',
-                    password: 'admin'
-                }, function(err, data) {
-                    assert.equal(err, null);
-                    assert.equal(data.res, "login ok");
-
-                    client_amoeba.use("deep").removeListener("login", f, function() {
-                        client_amoeba.use("deep").invoke("login", {
-                            "login": "admin",
-                            "password": "admin"
-                        }, function() {
-                            done();
-                        });
+                client_amoeba.use("deep").removeListener("login", f, function() {
+                    client_amoeba.use("deep").invoke("login", {
+                        "login": "admin",
+                        "password": "admin"
+                    }, function() {
+                        done();
                     });
                 });
-
             });
-        });
 
+        });
     });
+
+});
+
 
 
 });
