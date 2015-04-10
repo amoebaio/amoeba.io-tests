@@ -2,15 +2,15 @@ var util = require('util');
 var EventEmitter = require('events').EventEmitter;
 
 Auth = function() {
-    this.counter = 0;
+    this.counter = 3;
 };
 
-util.inherits(Auth, EventEmitter);
+//util.inherits(Auth, EventEmitter);
 
 Auth.prototype.login = function(data, callback) {
 
     if (data.login == "admin" && data.password == "admin") {
-        this.counter++;
+        
         this.emit("login", {
             count: this.counter
         });
