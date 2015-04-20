@@ -105,8 +105,8 @@ describe('Complex invoke tests', function() {
         var c = 0;
 
         server_amoeba.path("auth_with_middleware").use("before_invoke", function(context, next) {
-            assert.equal(context.request.params.login, "adminno");
-            context.request.params.login = "admin";
+            assert.equal(context.request.arguments[0].login, "adminno");
+            context.request.arguments[0].login = "admin";
             c = c + 1;
             next();
         });
